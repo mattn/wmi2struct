@@ -82,6 +82,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		fmt.Fprintf(&buf, "// %s is struct for WMI\n", r.Class.Name)
 		fmt.Fprintf(&buf, "type %s struct {\n", r.Class.Name)
 		for _, p := range r.Class.Property {
 			fmt.Fprintf(&buf, "\t%s\t%s\n", p.Name, typeName(p.Type))
