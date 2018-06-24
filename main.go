@@ -10,6 +10,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
+
+	"github.com/go-ole/go-ole"
+	"github.com/go-ole/go-ole/oleutil"
 )
 
 type Property struct {
@@ -64,9 +67,19 @@ func typeName(s string) string {
 
 func main() {
 	var pkg, out string
+	var list bool
 	flag.StringVar(&pkg, "p", "main", "package")
 	flag.StringVar(&out, "o", "", "output filename")
+	flag.BoolVar(&list, "l", false, "list all classes")
 	flag.Parse()
+
+	if list {
+		ole.CoInitialize(0)
+		enumClasses(func(s string) {
+			fmt.Println(s)
+		})
+		return
+	}
 
 	var buf bytes.Buffer
 
@@ -105,4 +118,28 @@ func main() {
 		w = f
 	}
 	w.Write(b)
+}
+
+func enumClasses(f func(string)) {
+	unk, err := ole.GetObject(`winmgmts:root\cimv2`, nil, nil)
+	if err != nil {
+		return
+	}
+	defer unk.Release()
+	disp, err := unk.QueryInterface(ole.IID_IDispatch)
+	if err != nil {
+		return
+	}
+	defer unk.Release()
+	classes := oleutil.MustCallMethod(disp, "ExecQuery", "Select * From meta_class ").ToIDispatch()
+	defer classes.Release()
+	oleutil.ForEach(classes, func(v *ole.VARIANT) error {
+		clazz := v.ToIDispatch()
+		defer clazz.Release()
+		path := oleutil.MustGetProperty(clazz, "Path_").ToIDispatch()
+		defer path.Release()
+		f(oleutil.MustGetProperty(path, "Class").ToString())
+		v.Clear()
+		return nil
+	})
 }
