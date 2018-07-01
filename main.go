@@ -142,7 +142,6 @@ func enumClasses(f func(string)) {
 	defer classes.Release()
 	oleutil.ForEach(classes, func(v *ole.VARIANT) error {
 		clazz := v.ToIDispatch()
-		defer clazz.Release()
 		path := oleutil.MustGetProperty(clazz, "Path_").ToIDispatch()
 		defer path.Release()
 		f(oleutil.MustGetProperty(path, "Class").ToString())
