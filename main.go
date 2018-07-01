@@ -67,10 +67,11 @@ func typeName(s string) string {
 
 func main() {
 	var pkg, out string
-	var list bool
+	var list, num bool
 	flag.StringVar(&pkg, "p", "main", "package")
 	flag.StringVar(&out, "o", "", "output filename")
 	flag.BoolVar(&list, "l", false, "list all classes")
+	flag.BoolVar(&num, "n", false, "output number fields")
 	flag.Parse()
 
 	if list {
@@ -98,6 +99,12 @@ func main() {
 		fmt.Fprintf(&buf, "// %s is struct for WMI\n", r.Class.Name)
 		fmt.Fprintf(&buf, "type %s struct {\n", r.Class.Name)
 		for _, p := range r.Class.Property {
+			if num {
+				switch p.Type {
+				case "datetime", "object", "reference", "string":
+					continue
+				}
+			}
 			fmt.Fprintf(&buf, "\t%s\t%s\n", p.Name, typeName(p.Type))
 		}
 		fmt.Fprintln(&buf, "}\n")
